@@ -12,7 +12,6 @@ const Dashboard = () => {
       <Paper elevation={3} sx={{ padding: '2rem', margin: '2rem 0 ', borderRadius: '1rem' }}>
          <Stack direction={'row'} alignItems={'center'} spacing={'1rem'}>
             <AdminPanelSettingsIcon sx={{ fontSize: '3rem' }} />
-
             <SearchInput placeholder='Search...' />
             <CurvedButton>Search</CurvedButton>
             <Box flexGrow={1} />
@@ -35,7 +34,6 @@ const Dashboard = () => {
          <AdminLayout>
             <Container component={'main'}>
                {AppBar}
-
 
                <Stack direction={{xs: 'column', lg: 'row'}}  flexWrap={'wrap'} justifyContent={'center'} alignItems={{xs: 'center',lg: 'stretch'}}
                sx={{gap: '2rem'}} >
