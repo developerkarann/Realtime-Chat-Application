@@ -1,5 +1,5 @@
 const User = require('../models/userModel');
-const { sendToken, emitEvent } = require('../utils/features');
+const { sendToken, emitEvent, uploadFilesToCloudinary } = require('../utils/features');
 const bcrypt = require('bcrypt');
 const { ErrorHandler } = require('../utils/utility');
 const { TryCatch } = require('../middlewares/error');
@@ -12,14 +12,25 @@ const { getOtherMembers } = require('../lib/helperFunc');
 exports.newUser = TryCatch(async (req, res, next) => {
     const { name, username, password, bio } = req.body;
 
+    // console.log(name,username,password, bio)
+
     const file = req.file;
 
-    if(!file) return next(new ErrorHandler('Please Upload Avatar'))
+    console.log(file)
+
+    if (!file) return next(new ErrorHandler('Please Upload Avatar', 400))
+
+    const result = await uploadFilesToCloudinary([file])
+    // console.log(result)
 
     const avatar = {
-        public_id: 'sample_id',
-        url: 'sample_url'
+        public_id: result[0].public_id,
+        url: result[0].url,
     }
+    // const avatar = {
+    //     public_id: 'test',
+    //     url: 'test',
+    // }
 
     const user = await User.create({
         name,
@@ -36,6 +47,8 @@ exports.newUser = TryCatch(async (req, res, next) => {
 exports.login = TryCatch(async (req, res, next) => {
     const { username, password } = req.body;
 
+    // console.log(username, password)
+
     const user = await User.findOne({ username: username }).select('+password')
 
     if (!user) {
@@ -48,7 +61,7 @@ exports.login = TryCatch(async (req, res, next) => {
         return next(new ErrorHandler('Invalid Password', 404))
     }
 
-    sendToken(res, user, 200, `Welcome ${user.name}, You are Logged In now`)
+    sendToken(res, user, 200, `Welcome ${user.name}`)
 })
 
 exports.getMyProfile = TryCatch(async (req, res) => {
@@ -66,10 +79,13 @@ exports.logout = TryCatch(async (req, res) => {
     const cookieOptions = {
         maxAge: 0,
         sameSite: 'none',
-        httpOnly: true,
-        secured: true
+        // httpOnly: true,
+        // secured: true
     }
-    res.status(200).cookie('token', "", cookieOptions).json({
+    res.clearCookie("token")
+    console.log('User logged out function invoked')
+   
+    res.status(200).json({
         success: true,
         message: 'Logged out successfully'
     })
@@ -139,7 +155,7 @@ exports.acceptFriendRequest = TryCatch(async (req, res, next) => {
 
     const request = await Request.findById(requestId).populate('sender', 'name').populate('receiver', 'name')
 
-    console.log(request)
+    // console.log(request)
 
     if (!request) return next(new ErrorHandler('Request not found', 404))
 
@@ -192,7 +208,7 @@ exports.getAllNotifications = TryCatch(async (req, res, next) => {
 })
 exports.getMyFriends = TryCatch(async (req, res, next) => {
 
-    const  chatId  = req.query.chatId;
+    const chatId = req.query.chatId;
 
     const chats = await Chat.find({ members: req.user, groupChat: false }).populate('members', 'name avatar');
 

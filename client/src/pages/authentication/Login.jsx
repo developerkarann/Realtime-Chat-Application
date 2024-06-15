@@ -1,19 +1,29 @@
-import React, { useState } from 'react'
-import { Avatar, Button, Container, IconButton, Paper, Stack, TextField, Typography } from '@mui/material'
-import { CameraAlt as CameraAltIcon, NearMe } from "@mui/icons-material";
+import { useFileHandler, useInputValidation } from '6pp';
+import { CameraAlt as CameraAltIcon } from "@mui/icons-material";
+import { Avatar, Button, Container, IconButton, Paper, Stack, TextField, Typography } from '@mui/material';
+import axios from 'axios';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useDispatch } from 'react-redux';
 import { VisuallyHiddenInput } from '../../components/styles/StyledComponents';
-import { useFileHandler, useInputValidation, useStrongPassword } from '6pp'
-import { usernameValidator } from '../../utils/Validators'
+import { server } from '../../constants/config';
+import { userExits } from '../../redux/reducers/auth';
+import { usernameValidator } from '../../utils/Validators';
 
 export default function Login() {
 
+  const dispatch = useDispatch()
+
   const [isLogin, setIsLogin] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   const name = useInputValidation('');
   const bio = useInputValidation('');
   const username = useInputValidation('', usernameValidator);
   const password = useInputValidation('');
   // const password = useStrongPassword();
+
+  // console.log(name,username,bio,password)
 
   const avatar = useFileHandler('single')
 
@@ -22,11 +32,72 @@ export default function Login() {
     setIsLogin((prev) => !prev)
   }
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
+    const toastId = toast.loading('Logging in ...')
+    try {
+      const config = {
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true
+      };
+
+      const { data } = await axios.post(`${server}/api/user/login`, {
+        username: username.value,
+        password: password.value
+      }, config)
+      dispatch(userExits(data.user))
+      toast.success(data.message, {
+        id: toastId
+      })
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Something Went Wrong", {
+        id: toastId
+      });
+    } finally {
+      setIsLoading(false)
+    }
+
+    // console.log(username, password)
+
   }
-  const handleSignup = (e) => {
-    e.preventDefault()
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true)
+    const toastId = toast.loading('Creating your account...')
+
+
+    const formData = new FormData();
+
+    formData.append('avatar', avatar.file)
+    formData.append('name', name.value)
+    formData.append('bio', bio.value)
+    formData.append('username', username.value)
+    formData.append('password', password.value)
+
+    const config = {
+      headers: { "Content-Type": "multipart/form-data" },
+      withCredentials: true
+    };
+
+    console.log(formData)
+    console.log(name.value, username.value, bio.value, password.value)
+
+
+    try {
+      const { data } = await axios.post(`${server}/api/user/new`, formData, config)
+      dispatch(userExits(data.user))
+      toast.success(data.message, {
+        id: toastId
+      })
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Something Went Wrong", {
+        id: toastId
+      });
+    } finally {
+      setIsLoading(false)
+    }
+
   }
 
   return (
@@ -54,12 +125,12 @@ export default function Login() {
               <>
                 <Typography variant='h5'>Login</Typography>
                 <form onSubmit={handleLogin}>
-                  <TextField required fullWidth label="username" margin='normal' variant='outlined' />
-                  <TextField required fullWidth label="Password" margin='normal' type='password' variant='outlined' />
-                  <Button type='submit' variant='contained' color='primary' sx={{ marginTop: '1rem' }} fullWidth>Login</Button>
+                  <TextField value={username.value} onChange={username.changeHandler} fullWidth label="username" margin='normal' variant='outlined' />
+                  <TextField value={password.value} onChange={password.changeHandler} fullWidth label="Password" margin='normal' type='password' variant='outlined' />
+                  <Button type='submit' variant='contained' color='primary' sx={{ marginTop: '1rem' }} disabled={isLoading} fullWidth>Login</Button>
                   <Typography textAlign={'center'} m={'1rem'}>Don't have an account?</Typography>
 
-                  <Button variant='text' onClick={toggleLogin} fullWidth>Sign up</Button>
+                  <Button variant='text' onClick={toggleLogin} disabled={isLoading} fullWidth>Sign up</Button>
                 </form>
               </>
               //
@@ -79,7 +150,7 @@ export default function Login() {
                     <IconButton sx={{ position: 'absolute', bottom: '0', right: '0', bgcolor: 'rgba(255,255,255,0.5)' }} component="label">
                       <>
                         <CameraAltIcon />
-                        <VisuallyHiddenInput type='file' onChange={avatar.changeHandler} ></VisuallyHiddenInput>
+                        <VisuallyHiddenInput type='file' name='avatar' onChange={avatar.changeHandler} ></VisuallyHiddenInput>
                       </>
                     </IconButton>
                   </Stack>
@@ -90,7 +161,7 @@ export default function Login() {
                       </Typography>
                     )
                   }
-                  <TextField value={name.value} onChange={name.changeHandler} required fullWidth label="Name" margin='normal' variant='outlined' />
+                  <TextField value={name.value} onChange={name.changeHandler} name='name' required fullWidth label="Name" margin='normal' variant='outlined' />
                   <TextField value={username.value} onChange={username.changeHandler} required fullWidth label="Username" margin='normal' variant='outlined' />
                   {
                     username.error && (
@@ -108,10 +179,10 @@ export default function Login() {
                               </Typography>
                             )
                           } */}
-                  <Button type='submit' variant='contained' color='primary' sx={{ marginTop: '1rem' }} fullWidth>Sign Up</Button>
+                  <Button type='submit' variant='contained' color='primary' sx={{ marginTop: '1rem' }} disabled={isLoading} fullWidth>Sign Up</Button>
                   <Typography textAlign={'center'} m={'1rem'}>Already have an account?</Typography>
 
-                  <Button variant='text' onClick={toggleLogin} fullWidth>Login</Button>
+                  <Button variant='text' onClick={toggleLogin} disabled={isLoading} fullWidth>Login</Button>
                 </form>
               </>
           }

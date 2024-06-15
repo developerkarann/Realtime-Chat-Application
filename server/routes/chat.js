@@ -22,7 +22,7 @@ app.put('/removemember', removeMembersValidator(), validateHandler, removeMember
 app.delete('/leave/:id', chatIdValidator(), validateHandler, leaveGroup)
 
 //Send attachments
-app.post('/message', attachmentsMulter, sendAttachmentsValidator, sendAttachments)
+app.post('/message', attachmentsMulter, sendAttachmentsValidator(), validateHandler, sendAttachments)
 
 //get messages
 app.get('/message/:id', chatIdValidator(), validateHandler, getMessages)

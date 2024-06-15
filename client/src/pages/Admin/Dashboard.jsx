@@ -1,12 +1,27 @@
 import React from 'react'
 import AdminLayout from '../../components/layouts/AdminLayout'
-import { Box, Container, Paper, Stack, Typography } from '@mui/material'
+import { Box, Container, Paper, Skeleton, Stack, Typography } from '@mui/material'
 import { AdminPanelSettings as AdminPanelSettingsIcon, Group as GroupIcon, Message as MessageIcon, Notifications as NotificationsIcon, Person as PersonIcon } from '@mui/icons-material'
 import moment from 'moment'
 import { CurvedButton, SearchInput } from '../../components/styles/StyledComponents'
 import { DoughnutChart, LineChart } from '../../components/specific/Charts'
+import { useFetchData } from '6pp'
+import { server } from '../../constants/config'
+import { LayoutLoader } from '../../components/layouts/Loaders'
+import { useErrors } from '../../hooks/hook'
 
 const Dashboard = () => {
+
+   const { loading, data, error } = useFetchData(`${server}/api/admin/stats`, 'dashboard-stats')
+
+   const { stats } = data || {};
+
+   useErrors([
+      {
+         isError: error,
+         error: error
+      }
+   ])
 
    const AppBar = <>
       <Paper elevation={3} sx={{ padding: '2rem', margin: '2rem 0 ', borderRadius: '1rem' }}>
@@ -23,44 +38,49 @@ const Dashboard = () => {
 
    const Widgets = <>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={'2rem'} justifyContent={'space-between'} alignItems={'center'} padding={'2rem 0'}>
-         <Widget title={'Users'} value={23} icon={<PersonIcon />} />
-         <Widget title={'chats'} value={23} icon={<GroupIcon />} />
-         <Widget title={'Messages'} value={23} icon={<MessageIcon />} />
+         <Widget title={'Users'} value={stats?.usersCount} icon={<PersonIcon />} />
+         <Widget title={'chats'} value={stats?.totalChatsCounts} icon={<GroupIcon />} />
+         <Widget title={'Messages'} value={stats?.messageCount} icon={<MessageIcon />} />
       </Stack>
    </>
+
 
    return (
       <>
          <AdminLayout>
-            <Container component={'main'}>
-               {AppBar}
 
-               <Stack direction={{xs: 'column', lg: 'row'}}  flexWrap={'wrap'} justifyContent={'center'} alignItems={{xs: 'center',lg: 'stretch'}}
-               sx={{gap: '2rem'}} >
-                  <Paper elevation={3} sx={{ padding: '2rem 3.5rem', borderRadius: '1rem', width: '100%', maxWidth: '35rem',  }} >
-                     <Typography variant='h4' margin={'2rem 0'} >Last Messages</Typography>
+            {
+               loading ? <Skeleton height={"100vh"}  /> : <Container component={'main'}>
+                  {AppBar}
 
-                     <LineChart value={[2,43,12,45]}/>
+                  <Stack direction={{ xs: 'column', lg: 'row' }} flexWrap={'wrap'} justifyContent={'center'} alignItems={{ xs: 'center', lg: 'stretch' }}
+                     sx={{ gap: '2rem' }} >
+                     <Paper elevation={3} sx={{ padding: '2rem 3.5rem', borderRadius: '1rem', width: '100%', maxWidth: '35rem', }} >
+                        <Typography variant='h4' margin={'2rem 0'} >Last Messages</Typography>
 
-                  </Paper>
+                        <LineChart value={stats?.messagesCharts || []} />
 
-                  <Paper elevation={3} sx={{
-                     padding: '1rem', borderRadius: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                     width: { xs: '100%', sm: '50%' }, position: 'relative' , maxWidth:'20rem' 
-                  }}>
+                     </Paper>
 
-                    <DoughnutChart labels={['Total Chats VS Group Chat']} value={[23,66]} />
+                     <Paper elevation={3} sx={{
+                        padding: '1rem', borderRadius: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center',
+                        width: { xs: '100%', sm: '50%' }, position: 'relative', maxWidth: '20rem'
+                     }}>
 
-                     <Stack position={'absolute'} direction={'row'} justifyContent={'center'} alignItems={'center'} spacing={'0.5rem'} width={'100%'} height={'100%'} >
-                        <GroupIcon />  <Typography>VS</Typography> <PersonIcon />
-                     </Stack>
-                  </Paper>
+                        <DoughnutChart labels={['Total Chats VS Group Chat']} value={[stats?.totalChatsCounts - stats?.groupsCount || 0, stats?.groupsCount || 0]} />
 
-               </Stack>
+                        <Stack position={'absolute'} direction={'row'} justifyContent={'center'} alignItems={'center'} spacing={'0.5rem'} width={'100%'} height={'100%'} >
+                           <GroupIcon />  <Typography>VS</Typography> <PersonIcon />
+                        </Stack>
+                     </Paper>
+
+                  </Stack>
 
 
-               {Widgets}
-            </Container>
+                  {Widgets}
+               </Container>
+            }
+
          </AdminLayout>
       </>
    )

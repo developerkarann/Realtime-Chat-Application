@@ -1,28 +1,79 @@
-import React, { Suspense, lazy, memo, useEffect, useState } from 'react'
-import { Grid, IconButton, Tooltip, Box, Drawer, Stack, Typography, TextField, Button, Backdrop } from "@mui/material";
-import { KeyboardBackspace as KeyboardBackspaceIcon, Menu as MenuIcon, Edit as EditIcon, Done as DoneIcon, Delete, Add, TurnLeft } from '@mui/icons-material'
-import { mateBlack } from '../../constants/color';
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Link } from '../../components/styles/StyledComponents'
+import { Add, Delete, Done as DoneIcon, Edit as EditIcon, KeyboardBackspace as KeyboardBackspaceIcon, Menu as MenuIcon } from '@mui/icons-material';
+import { Backdrop, Box, Button, CircularProgress, Drawer, Grid, IconButton, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import React, { Suspense, lazy, memo, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { LayoutLoader } from "../../components/layouts/Loaders";
 import AvatarCard from '../../components/shared/AvatarCard';
-import { sampleChats, sampleUsers } from '../../constants/sampleData'
 import UserItem from '../../components/shared/UserItem';
+import { Link } from '../../components/styles/StyledComponents';
+import { mateBlack } from '../../constants/color';
+import { useAsyncMutation, useErrors } from '../../hooks/hook';
+import { useChatDetailsQuery, useDeleteChatMutation, useMyGroupsQuery, useRemoveGroupMemberMutation, useRenameGroupMutation } from '../../redux/api/api';
+import { setIsAddMember } from '../../redux/reducers/misc';
 
 const DeleteDialog = lazy(() => import('../../components/dialogs/ConfirmDeleteDialog'))
 const AddMemberDialog = lazy(() => import('../../components/dialogs/AddMemberDialog'))
 
 
 export default function Groups() {
+  const chatId = useSearchParams()[0].get('group')
+  const dispatch = useDispatch()
+
+
+  const { isAddMember } = useSelector((state) => state.misc)
+
+  const myGroups = useMyGroupsQuery("");
+
+  const groupDetails = useChatDetailsQuery({ chatId, populate: true }, { skip: !chatId });
+
+  const [renameGroup, isLoadingGroupName] = useAsyncMutation(useRenameGroupMutation)
+
+  const [removeMember, isLoadingRemoveMember] = useAsyncMutation(useRemoveGroupMemberMutation)
+
+  const [deleteGroup, isLoadingDeleteGroup] = useAsyncMutation(useDeleteChatMutation)
+
 
   const [isMobileMenu, setMobileMenu] = useState(false)
   const [isEdit, setisEdit] = useState(false);
   const [groupName, setGroupName] = useState('')
   const [groupNameUpdatedValue, setGroupNameUpdatedValue] = useState('')
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false)
+  const [members, setMembers] = useState([])
+
+
+  const errors = [
+    {
+      isError: myGroups.isError,
+      error: myGroups.error
+    },
+    {
+      isError: groupDetails.isError,
+      error: groupDetails.error
+    }
+  ]
+
+  useErrors(errors)
+
+
+  useEffect(() => {
+    if (groupDetails.data) {
+      setGroupName(groupDetails.data.chat.name);
+      setGroupNameUpdatedValue(groupDetails.data.chat.name)
+      setMembers(groupDetails.data.chat.members)
+    }
+
+    return () => {
+      setGroupName('');
+      setGroupNameUpdatedValue('')
+      setMembers([])
+      setisEdit(false)
+    }
+  }, [groupDetails.data])
+
 
 
   const navigate = useNavigate()
-  const chatId = useSearchParams()[0].get('group')
 
 
   const navigateBack = () => {
@@ -41,18 +92,18 @@ export default function Groups() {
     setConfirmDeleteDialog(false)
   }
   const deleteHandler = () => {
-    console.log("Group deleted")
+    deleteGroup('Deleteing group...', chatId)
+    closeConfirmDeletehandler()
+    navigate('/groups')
   }
   const openAddMember = () => {
-    console.log('add member')
+    dispatch(setIsAddMember(true))
   }
 
-  const removeMemberHandler = (id) => {
-    console.log('Member Removed')
+  const removeMemberHandler = (userId) => {
+    removeMember('Removing members', { chatId, userId })
   }
 
-  // Add member
-  const isAddMember = false;
 
   const IconsButtons = <>
     <Box sx={{ display: { xs: 'block', sm: 'none', position: 'fixed', right: '1rem', top: '1rem' } }}>
@@ -72,7 +123,7 @@ export default function Groups() {
 
   const updateGroupNameHandler = () => {
     setisEdit(false)
-    console.log(groupNameUpdatedValue)
+    renameGroup('Updating group name...', { chatId, name: groupNameUpdatedValue })
   }
 
   const GroupNameComponent = <>
@@ -81,12 +132,12 @@ export default function Groups() {
       {isEdit ?
         <>
           <TextField value={groupNameUpdatedValue} onChange={(e) => setGroupNameUpdatedValue(e.target.value)} />
-          <IconButton onClick={updateGroupNameHandler}> <DoneIcon /> </IconButton>
+          <IconButton onClick={updateGroupNameHandler} disabled={isLoadingGroupName} > <DoneIcon /> </IconButton>
         </>
         :
         <>
           <Typography variant='h4'> {groupName}</Typography>
-          <IconButton onClick={() => setisEdit(true)}> <EditIcon />  </IconButton>
+          <IconButton onClick={() => setisEdit(true)} disabled={isLoadingGroupName} > <EditIcon />  </IconButton>
         </>}
     </Stack>
   </>
@@ -113,14 +164,14 @@ export default function Groups() {
   }, [chatId])
 
 
-  return (
+  return myGroups.isLoading ? <LayoutLoader /> : (
     <>
       {/* Left Container  */}
       <Grid container height={'100vh'}>
 
         <Grid item sx={{ display: { xs: 'none', sm: 'block' } }} sm={4} bgcolor={'bisque'}>
 
-          <GroupsList myGroups={sampleChats} chatId={chatId} />
+          <GroupsList myGroups={myGroups?.data?.groups} chatId={chatId} />
 
         </Grid>
 
@@ -139,7 +190,7 @@ export default function Groups() {
               {/* Group Members  */}
 
               {
-                sampleUsers.map((data, index) => (
+                isLoadingRemoveMember ? (<CircularProgress />) : members.map((data, index) => (
                   <UserItem user={data} isAdded key={index} handler={removeMemberHandler}
                     styling={{
                       boxShadow: '0 0 0.2rem rgba(0,0,0.2)',
@@ -160,14 +211,14 @@ export default function Groups() {
         </Grid>
 
         <Drawer sx={{ display: { xs: 'block', sm: 'none' } }} open={isMobileMenu} onClose={handleMobileClose}>
-          <GroupsList w={'50vw'} myGroups={sampleChats} chatId={chatId} />
+          <GroupsList w={'50vw'} myGroups={myGroups?.data?.groups} chatId={chatId} />
 
         </Drawer>
 
 
         {confirmDeleteDialog && <Suspense fallback={<Backdrop open />} ><DeleteDialog open={confirmDeleteDialog} handleClose={closeConfirmDeletehandler} deleteHandler={deleteHandler} /></Suspense>}
 
-        {isAddMember && <Suspense fallback={<Backdrop open />}>  <AddMemberDialog />   </Suspense>}
+        {isAddMember && <Suspense fallback={<Backdrop open />}>  <AddMemberDialog chatId={chatId} />   </Suspense>}
 
       </Grid>
 

@@ -7,7 +7,7 @@ const {registerValidator, validateHandler, loginValidator, sendFriendRequestVali
 
 const app = express.Router();
 
-app.post('/new', singleAvatar, registerValidator(), validateHandler,  newUser)
+app.post('/new', singleAvatar, registerValidator(), validateHandler, newUser)
 app.post('/login', loginValidator(), validateHandler, login)
 
 // After Here User must be logged in to access the routes

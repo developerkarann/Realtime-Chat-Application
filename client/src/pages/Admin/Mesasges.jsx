@@ -4,10 +4,27 @@ import Table from '../../components/specific/Table'
 import { dashboardData } from '../../constants/sampleData'
 import { fileFormate, transformImage } from '../../lib/features'
 import moment from 'moment'
-import { Avatar, Box, Stack } from '@mui/material'
+import { Avatar, Box, Skeleton, Stack } from '@mui/material'
 import RenderAttachment from '../../components/shared/RenderAttachment'
+import { useFetchData } from '6pp'
+import { useErrors } from '../../hooks/hook'
+import { server } from '../../constants/config'
+
 
 const Mesasges = () => {
+
+  const { loading, data, error } = useFetchData(`${server}/api/admin/messages`, 'dashboard-messages')
+
+  console.log(data)
+
+  useErrors([
+    {
+      isError: error,
+      error: error
+    }
+  ])
+
+
   const [rows, setRows] = useState([])
 
   const columns = [
@@ -23,14 +40,14 @@ const Mesasges = () => {
       headerClassName: 'table-header',
       width: 200,
       renderCell: (params) => {
-        const {attachment} = params.row
-        return attachment?.length > 0 ? attachment.map((i)=>{
-            const url = i.url;
-            const file = fileFormate(url);
-            return <Box>
-              <a href={url} download target='_blank' style={{color:'black'}} > {RenderAttachment(file, url)} </a>
-            </Box>
-        })  : 'No Attachments'
+        const { attachment } = params.row
+        return attachment?.length > 0 ? attachment.map((i) => {
+          const url = i.url;
+          const file = fileFormate(url);
+          return <Box>
+            <a href={url} download target='_blank' style={{ color: 'black' }} > {RenderAttachment(file, url)} </a>
+          </Box>
+        }) : 'No Attachments'
       }
     },
     {
@@ -72,21 +89,25 @@ const Mesasges = () => {
   ]
 
   useEffect(() => {
-    setRows(dashboardData.messages.map((i) => ({
-      ...i,
-      id: i._id,
-      sender: {
-        name: i.sender.name,
-        avatar: transformImage(i.sender, 50)
-      },
-      craetedAt: moment(i.createdAt).format('MMMM Do YYYY,h:m:ss a')
-    })))
-  }, [])
+    if (data) {
+      setRows(data.messages.map((i) => ({
+        ...i,
+        id: i._id,
+        sender: {
+          name: i.sender.name,
+          avatar: transformImage(i.sender.avatar, 50)
+        },
+        craetedAt: moment(i.createdAt).format('MMMM Do YYYY,h:m:ss a')
+      })))
+    }
+  }, [data])
 
 
   return (
     <AdminLayout>
-      <Table heading={'All Messages'} columns={columns} rows={rows} rowHeight={160} />
+     {
+      loading ? <Skeleton  height={"100vh"} /> :  <Table heading={'All Messages'} columns={columns} rows={rows} rowHeight={160} />
+     }
     </AdminLayout>
   )
 }

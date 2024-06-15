@@ -1,7 +1,11 @@
-import React, { Suspense, lazy } from "react"
+import React, { Suspense, lazy, useEffect, useMemo } from "react"
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ProtectRoute from "./components/auth/ProtectRoute"
 import { LayoutLoader } from "./components/layouts/Loaders"
+import axios from "axios";
+import { server } from "./constants/config";
+import { useDispatch, useSelector } from 'react-redux'
+import { userExits, userNotExits } from "./redux/reducers/auth";
 // import Home from "./pages/home/Home"
 const Home = lazy(() => import('./pages/home/Home'))
 const Login = lazy(() => import('./pages/authentication/Login'))
@@ -14,14 +18,32 @@ const Dashboard = lazy(() => import('./pages/Admin/Dashboard'))
 const UserManagement = lazy(() => import('./pages/Admin/UserManagement'))
 const ChatManagement = lazy(() => import('./pages/Admin/ChatManagement'))
 const Mesasges = lazy(() => import('./pages/Admin/Mesasges'))
+import { Toaster } from 'react-hot-toast'
+import { SocketProvider } from "./socket";
+import io from 'socket.io-client'
+
+
 
 function App() {
 
-  let user = true;
-  return (
+  const dispatch = useDispatch()
+  const { user, isLoading } = useSelector((state) => state.auth)
+
+  useEffect(() => {
+    // console.log(server)
+    axios.get(`${server}/api/user/me`, { withCredentials: true })
+      .then(({ data }) => dispatch(userExits(data)))
+      .catch((err) => dispatch(userNotExits()))
+  }, [dispatch])
+
+  // const socket = useMemo(() => io(server, { withCredentials: true, }), [])
+
+  // console.log(socket)
+
+  return isLoading ? (<LayoutLoader />) : (
     <>
       <BrowserRouter>
-        <Suspense fallback={<LayoutLoader/>}>
+        <Suspense fallback={<LayoutLoader />}>
           <Routes>
             <Route element={<ProtectRoute user={user} />}>
               <Route path="/" element={<Home />} />
@@ -29,14 +51,15 @@ function App() {
               <Route path="/groups" element={<Groups />} />
             </Route>
             <Route path="/login" element={<ProtectRoute user={!user} redirect="/" > <Login /> </ProtectRoute>} />
-            <Route path='/admin' element={<AdminLogin/>} />
-            <Route path='/admin/dashboard' element={<Dashboard/>} />
-            <Route path='/admin/users' element={<UserManagement/>} />
-            <Route path='/admin/chats' element={<ChatManagement/>} />
-            <Route path='/admin/messages' element={<Mesasges/>} />
+            <Route path='/admin' element={<AdminLogin />} />
+            <Route path='/admin/dashboard' element={<Dashboard />} />
+            <Route path='/admin/users' element={<UserManagement />} />
+            <Route path='/admin/chats' element={<ChatManagement />} />
+            <Route path='/admin/messages' element={<Mesasges />} />
             <Route path='*' element={<NotFound />} />
           </Routes>
         </Suspense>
+        <Toaster position="bottom-center" />
       </BrowserRouter>
     </>
   )

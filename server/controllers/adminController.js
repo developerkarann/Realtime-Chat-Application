@@ -15,26 +15,32 @@ exports.adminLogin = TryCatch(async (req, res, next) => {
 
     const isMatched = secretKey === adminSecretKey;
 
-    if (!isMatched) return next(new ErrorHandler('Invalid Admin Key', 401))
+    if (!isMatched) return next(new ErrorHandler('Invalid Secret Key', 401))
 
     const token = jwt.sign(secretKey, process.env.JWT_SECRET)
 
     return res.status(200).cookie('admin-token', token, { ...cookieOptions, maxAge: 1000 * 60 * 15 }).json({
         success: true,
-        message: 'Authenticated Successfully, Welcome BOSS'
+        message: 'Welcome BOSS'
     })
 
 })
 
 exports.adminLogout = TryCatch(async (req, res) => {
 
-    return res.status(200).cookie('admin-token', '', { ...cookieOptions, maxAge: 0 }).json({
+    res.clearCookie("admin-token")
+
+    // return res.status(200).cookie('admin-token', '', { ...cookieOptions, maxAge: 0 }).json({
+    //     success: true,
+    //     message: 'You are logged out now BOSS'
+    // })
+    return res.status(200).json({
         success: true,
         message: 'You are logged out now BOSS'
     })
 })
 
-exports.verifyAdmin = TryCatch(async(req,res)=>{
+exports.verifyAdmin = TryCatch(async (req, res) => {
     return res.status(200).json({
         admin: true
     })
@@ -65,7 +71,7 @@ exports.getAllUsers = TryCatch(async (req, res) => {
 
     return res.status(200).json({
         status: 'success',
-        data: transformUsers
+        users: transformUsers
     })
 })
 
@@ -101,7 +107,7 @@ exports.getAllChats = TryCatch(async (req, res) => {
 
     return res.status(200).json({
         status: 'success',
-        transformChats
+        chats: transformChats
     })
 
 })
@@ -111,9 +117,9 @@ exports.getAllMessages = TryCatch(async (req, res) => {
 
     const messages = await Message.find({}).populate('sender', 'name avatar').populate('chat', 'groupChat')
 
-    const transformMessages = messages.map(({ content, attachments, _id, sender, createdAt, chat }) => ({
+    const transformMessages = messages.map(({ content, attachment, _id, sender, createdAt, chat }) => ({
         _id,
-        attachments,
+        attachment,
         content,
         createdAt,
         chat: chat._id,
@@ -127,7 +133,7 @@ exports.getAllMessages = TryCatch(async (req, res) => {
 
     return res.status(200).json({
         success: true,
-        transformMessages
+        messages:transformMessages
     })
 
 })
@@ -140,12 +146,9 @@ exports.getDashboard = TryCatch(async (req, res) => {
         Chat.countDocuments(),
     ])
 
-    const stats = {
-        groupsCount, usersCount, messageCount, totalChatsCounts
-    }
-
+    
     const today = new Date();
-
+    
     let last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 7)
 
@@ -164,15 +167,17 @@ exports.getDashboard = TryCatch(async (req, res) => {
         const indexApprox = (today.getTime() - msg.createdAt.getTime()) / daysInMiliSec
 
         const index = Math.floor(indexApprox);
-
+        
         messages[6 - index]++;
-    })
-
-
-
-    return res.status(200).json({
-        success: true,
-        stats,
-        messagesCharts: messages
+        })
+        
+        const stats = {
+            groupsCount, usersCount, messageCount, totalChatsCounts,  messagesCharts: messages
+        }
+        
+        
+        return res.status(200).json({
+            success: true,
+            stats,
     })
 })

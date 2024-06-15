@@ -1,4 +1,4 @@
-const { body, validationResult, check , param,query} = require('express-validator');
+const { body, validationResult, check, param, query } = require('express-validator');
 const { ErrorHandler } = require('../utils/utility');
 const validateHandler = (req, res, next) => {
     const errors = validationResult(req)
@@ -25,12 +25,12 @@ const loginValidator = () => [
 
 const newGroupValidator = () => [
     body('name', 'Please enter your name').notEmpty(),
-    body('members').notEmpty().withMessage('Please enter members').isArray({ min: 2, max: 10 }).withMessage('Members must be 2-10')
+    // body('members').notEmpty().withMessage('Please enter members').isArray({ min: 2, max: 10 }).withMessage('Members must be 2-10')
 ];
 
 const addMembersValidator = () => [
-    body('chatId', 'Please ChatId').notEmpty(),
-    body('member').notEmpty().withMessage('Please enter members').isArray({ min: 1,  max: 7 }).withMessage('Members must be 1-7')
+    body('chatId', 'Please enter chatId').notEmpty(),
+    body('members').notEmpty().withMessage('Please enter members').isArray({ min: 1, max: 7 }).withMessage('Members must be 1-7')
 ];
 
 const removeMembersValidator = () => [
@@ -66,5 +66,7 @@ const adminLoginValidator = () => [
 
 
 
-module.exports = { registerValidator, validateHandler, loginValidator, newGroupValidator, addMembersValidator,removeMembersValidator
-, sendAttachmentsValidator,  chatIdValidator, renameGroupValidator, sendFriendRequestValidator, acceptRequestValidator, adminLoginValidator}
+module.exports = {
+    registerValidator, validateHandler, loginValidator, newGroupValidator, addMembersValidator, removeMembersValidator
+    , sendAttachmentsValidator, chatIdValidator, renameGroupValidator, sendFriendRequestValidator, acceptRequestValidator, adminLoginValidator
+}

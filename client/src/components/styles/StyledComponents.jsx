@@ -1,4 +1,4 @@
-import { styled } from "@mui/material";
+import { Skeleton, keyframes, styled } from "@mui/material";
 import { Link as LinkComponent } from 'react-router-dom'
 import { mateBlack } from "../../constants/color";
 
@@ -38,7 +38,7 @@ export const InputBox = styled('input')`
 export const SearchInput = styled('input')({
     padding: '1rem 2rem',
     width: '20vmax',
-    border:'none',
+    border: 'none',
     outline: 'none',
     borderRadius: '1.5rem',
     backgroundColor: '#f1f1f1',
@@ -47,14 +47,24 @@ export const SearchInput = styled('input')({
 
 export const CurvedButton = styled('button')({
     padding: '1rem 2rem',
-    border:'none',
+    border: 'none',
     outline: 'none',
     borderRadius: '1.5rem',
-    cursor:'pointer',
+    cursor: 'pointer',
     backgroundColor: mateBlack,
-    color:'white',
+    color: 'white',
     fontSize: '1.1rem',
-    "&:hover" : {
-          backgroundColor: 'rgba(0,0,0,0.8)'
+    "&:hover": {
+        backgroundColor: 'rgba(0,0,0,0.8)'
     }
 })
+
+const bounceAnimation = keyframes`
+0% { tranform: scale(1);}
+50% { tranform: scale(1.5);}
+100% { tranform: scale(1);}
+`
+
+export const BounchingSkeleton = styled(Skeleton)(() => ({
+    animation: `${bounceAnimation} is infinite`
+}))
