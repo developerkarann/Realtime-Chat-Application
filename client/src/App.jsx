@@ -30,15 +30,11 @@ function App() {
   const { user, isLoading } = useSelector((state) => state.auth)
 
   useEffect(() => {
-    // console.log(server)
     axios.get(`${server}/api/user/me`, { withCredentials: true })
       .then(({ data }) => dispatch(userExits(data)))
       .catch((err) => dispatch(userNotExits()))
   }, [dispatch])
 
-  // const socket = useMemo(() => io(server, { withCredentials: true, }), [])
-
-  // console.log(socket)
 
   return isLoading ? (<LayoutLoader />) : (
     <>
