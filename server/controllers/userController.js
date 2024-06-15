@@ -83,7 +83,6 @@ exports.logout = TryCatch(async (req, res) => {
         // secured: true
     }
     res.clearCookie("token")
-    console.log('User logged out function invoked')
    
     res.status(200).json({
         success: true,

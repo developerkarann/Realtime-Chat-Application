@@ -57,16 +57,11 @@ app.use((req, res, next) => {
     next()
 })
 
-// app.set("io", io)
-// app.set("userSocketIds", userSocketIds)
 
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({
-    origin: true,
-    credentials: true
-}))
+app.use(cors(corsOptions))
 
 app.use('/api/user', userRoutes)
 app.use('/api/chat', chatRoutes)
