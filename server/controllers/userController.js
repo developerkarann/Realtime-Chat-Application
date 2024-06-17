@@ -79,11 +79,14 @@ exports.logout = TryCatch(async (req, res) => {
     const cookieOptions = {
         maxAge: 0,
         sameSite: 'none',
-        // httpOnly: true,
-        // secured: true
+        httpOnly: true,
+        secure: true,
+        expires: new Date(Date.now()),
     }
-    res.header({"Cache-Control": "no-cache","max-age": "10"})
-    res.clearCookie("token")
+  
+     res.cookie('token', null, cookieOptions )
+
+    // res.clearCookie("token")
    
     res.status(200).json({
         success: true,
