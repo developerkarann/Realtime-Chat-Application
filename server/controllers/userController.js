@@ -82,11 +82,13 @@ exports.logout = TryCatch(async (req, res) => {
         // httpOnly: true,
         // secured: true
     }
+    res.header({"Cache-Control": "no-cache","max-age": "10"})
     res.clearCookie("token")
    
     res.status(200).json({
         success: true,
-        message: 'Logged out successfully'
+        message: 'Logged out successfully',
+        time: Date.now()
     })
 })
 
